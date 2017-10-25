@@ -127,6 +127,7 @@ func main() {
 			height := streamCtx.Height()
 
 			fmt.Printf("streamIndex: %d\n", stream.Index())
+			fmt.Printf("bitrate: %d\n", streamCtx.BitRate())
 			fmt.Printf("codec: %s\n", descriptor.Name())
 			fmt.Printf("resolution: %dx%d\n", width, height)
 			fmt.Printf("pts: %d\n", stream.StartTime())
