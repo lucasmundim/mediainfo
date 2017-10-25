@@ -10,28 +10,14 @@
 
 package main
 
+//#include <string.h>
 //#include <libavutil/avutil.h>
 //#include <libavutil/avstring.h>
 //#include <libavcodec/avcodec.h>
 //#include <libavformat/avformat.h>
 //#include <libavformat/avio.h>
 //
-// typedef struct buffer_data {
-//     uint8_t *ptr;
-//     size_t size; ///< size left in the buffer
-// } buffer_data;
-//
-// int read_packet(void *opaque, uint8_t *buf, int buf_size)
-// {
-//     struct buffer_data *bd = (struct buffer_data *)opaque;
-//     buf_size = FFMIN(buf_size, bd->size);
-//     printf("ptr:%p size:%zu\n", bd->ptr, bd->size);
-//     /* copy internal buffer data to buf */
-//     memcpy(buf, bd->ptr, buf_size);
-//     bd->ptr  += buf_size;
-//     bd->size -= buf_size;
-//     return buf_size;
-// }
+// extern int readPacket(void *p0, uint8_t *p1, int p2);
 //
 // #cgo pkg-config: libavformat libavutil
 import "C"
@@ -49,6 +35,33 @@ import (
 )
 
 var initFileName, inputFileName string
+
+type bufferData struct {
+	ptr  *C.uint8_t
+	size C.size_t
+}
+
+func min(x, y C.int) C.int {
+	if x < y {
+		return x
+	}
+	return y
+}
+
+//export readPacket
+func readPacket(opaque unsafe.Pointer, buffer *C.uint8_t, bufferSize C.int) C.int {
+	fmt.Printf("opaque:%p buf:%p buf_size:%d\n", opaque, buffer, bufferSize)
+
+	bd := (*bufferData)(opaque)
+	bufferSize = min(bufferSize, (C.int)(bd.size))
+
+	fmt.Printf("ptr:%p size:%d updated_buf_size:%d\n", bd.ptr, bd.size, bufferSize)
+
+	C.memcpy(unsafe.Pointer(buffer), unsafe.Pointer(bd.ptr), (C.size_t)(bufferSize))
+	bd.ptr = (*C.uint8_t)(unsafe.Pointer(uintptr(unsafe.Pointer(bd.ptr)) + uintptr(bufferSize)))
+	bd.size -= (C.size_t)(bufferSize)
+	return bufferSize
+}
 
 func init() {
 	flag.StringVar(&initFileName, "init", "", "init file to probe")
@@ -96,11 +109,11 @@ func main() {
 	readExchangeArea := C.av_malloc(readBufferSize)
 	// defer C.av_free(unsafe.Pointer(readExchangeArea))
 
-	var bd C.buffer_data
+	var bd bufferData
 	bd.ptr = (*C.uint8_t)(unsafe.Pointer(&buffer[0]))
 	bd.size = C.size_t(len(buffer))
 
-	cCtx := C.avio_alloc_context((*C.uchar)(readExchangeArea), bufferSize, 0, unsafe.Pointer(&bd), (*[0]byte)(C.read_packet), nil, nil)
+	cCtx := C.avio_alloc_context((*C.uchar)(unsafe.Pointer(readExchangeArea)), bufferSize, 0, unsafe.Pointer(&bd), (*[0]byte)(C.readPacket), nil, nil)
 	defer C.av_free(unsafe.Pointer(cCtx))
 	ioCtx := avformat.NewIOContextFromC(unsafe.Pointer(cCtx))
 	// defer C.av_free(unsafe.Pointer(ioCtx))
