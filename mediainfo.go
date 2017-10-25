@@ -89,7 +89,7 @@ func main() {
 	defer options.Free()
 
 	var bufferSize C.int
-	bufferSize = C.int(8192)
+	bufferSize = C.int(4096)
 	readBufferSize := C.size_t(bufferSize)
 	readExchangeArea := C.av_malloc(readBufferSize)
 	// defer C.av_free(unsafe.Pointer(readExchangeArea))
