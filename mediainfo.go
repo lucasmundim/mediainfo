@@ -150,4 +150,6 @@ func main() {
 				descriptor.Name())
 		}
 	}
+
+	C.av_dump_format((*C.AVFormatContext)(unsafe.Pointer(decFmt.CAVFormatContext)), C.int(0), C.CString(""), C.int(0))
 }
