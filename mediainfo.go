@@ -65,6 +65,8 @@ func main() {
 		log.Fatalf("Missing --input=file\n")
 	}
 
+	avutil.SetLogLevel(avutil.LogLevelDebug)
+
 	var buffer []byte
 	initData, err := ioutil.ReadFile(initFileName)
 	if err != nil {
