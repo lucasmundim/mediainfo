@@ -96,7 +96,7 @@ func main() {
 
 	var bd C.buffer_data
 	bd.ptr = (*C.uint8_t)(unsafe.Pointer(&buffer[0]))
-	bd.size = C.size_t(bufferSize)
+	bd.size = C.size_t(len(buffer))
 
 	cCtx := C.avio_alloc_context((*C.uchar)(readExchangeArea), bufferSize, 0, unsafe.Pointer(&bd), (*[0]byte)(C.read_packet), nil, nil)
 	defer C.av_free(unsafe.Pointer(cCtx))
