@@ -15,24 +15,7 @@ package main
 //#include <libavcodec/avcodec.h>
 //#include <libavformat/avformat.h>
 //#include <libavformat/avio.h>
-//
-// typedef struct buffer_data {
-//     uint8_t *ptr;
-//     size_t size; ///< size left in the buffer
-// } buffer_data;
-//
-// int read_packet(void *opaque, uint8_t *buf, int buf_size)
-// {
-//     struct buffer_data *bd = (struct buffer_data *)opaque;
-//     buf_size = FFMIN(buf_size, bd->size);
-//     printf("ptr:%p size:%zu\n", bd->ptr, bd->size);
-//     /* copy internal buffer data to buf */
-//     memcpy(buf, bd->ptr, buf_size);
-//     bd->ptr  += buf_size;
-//     bd->size -= buf_size;
-//     return buf_size;
-// }
-//
+//#include "mediainfo.h"
 // #cgo pkg-config: libavformat libavutil
 import "C"
 
@@ -96,11 +79,18 @@ func main() {
 	readExchangeArea := C.av_malloc(readBufferSize)
 	// defer C.av_free(unsafe.Pointer(readExchangeArea))
 
-	var bd C.buffer_data
-	bd.ptr = (*C.uint8_t)(unsafe.Pointer(&buffer[0]))
-	bd.size = C.size_t(len(buffer))
+	// var bd C.buffer_data
+	// bd.ptr = (*C.uint8_t)(unsafe.Pointer(&buffer[0]))
+	// bd.size = C.size_t(len(buffer))
 
-	cCtx := C.avio_alloc_context((*C.uchar)(readExchangeArea), bufferSize, 0, unsafe.Pointer(&bd), (*[0]byte)(C.read_packet), nil, nil)
+	ptr := (*C.uint8_t)(unsafe.Pointer(&buffer[0]))
+	size := C.size_t(len(buffer))
+
+	var bd *C.buffer_data
+	bd = C.alloc_buffer_data(ptr, size)
+	defer C.free_buffer_data(bd)
+
+	cCtx := C.avio_alloc_context((*C.uchar)(readExchangeArea), bufferSize, 0, unsafe.Pointer(bd), (*[0]byte)(C.read_packet), nil, nil)
 	defer C.av_free(unsafe.Pointer(cCtx))
 	ioCtx := avformat.NewIOContextFromC(unsafe.Pointer(cCtx))
 	// defer C.av_free(unsafe.Pointer(ioCtx))
